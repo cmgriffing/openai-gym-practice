@@ -1,0 +1,2 @@
+model_checkpoint_path: "weights/cem_CartPole-v0_params.h5f"
+all_model_checkpoint_paths: "weights/cem_CartPole-v0_params.h5f"
