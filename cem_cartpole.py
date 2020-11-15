@@ -6,7 +6,9 @@ from keras.layers import Dense, Activation, Flatten
 from keras.optimizers import Adam
 
 from rl.agents.cem import CEMAgent
-from rl.memory import EpisodeParameterMemory
+from rl.agents.dqn import DQNAgent
+from rl.policy import BoltzmannQPolicy
+from rl.memory import EpisodeParameterMemory, SequentialMemory
 
 import argparse
 
@@ -34,51 +36,52 @@ nb_actions = env.action_space.n
 obs_dim = env.observation_space.shape[0]
 
 # Option 1 : Simple model
-# model = Sequential()
-# model.add(Flatten(input_shape=(1,) + env.observation_space.shape))
-# model.add(Dense(nb_actions))
-# model.add(Activation('softmax'))
-
-# Option 2: deep network
 model = Sequential()
 model.add(Flatten(input_shape=(1,) + env.observation_space.shape))
-model.add(Dense(16))
-model.add(Activation('relu'))
-model.add(Dense(16))
-model.add(Activation('relu'))
-model.add(Dense(16))
-model.add(Activation('relu'))
 model.add(Dense(nb_actions))
 model.add(Activation('softmax'))
 
+# Option 2: deep network
+# model = Sequential()
+# model.add(Flatten(input_shape=(1,) + env.observation_space.shape))
+# model.add(Dense(16))
+# model.add(Activation('relu'))
+# model.add(Dense(16))
+# model.add(Activation('relu'))
+# model.add(Dense(16))
+# model.add(Activation('relu'))
+# model.add(Dense(nb_actions))
+# model.add(Activation('softmax'))
 
 print(model.summary())
-
 
 # Finally, we configure and compile our agent. You can use every built-in Keras optimizer and
 # even the metrics!
 memory = EpisodeParameterMemory(limit=1000, window_length=1)
 
-cem = CEMAgent(model=model, nb_actions=nb_actions, memory=memory,
-              batch_size=50, nb_steps_warmup=2000, train_interval=50, elite_frac=0.05)
-
+cem = CEMAgent(model=model, nb_actions=nb_actions, memory=memory, batch_size=50, nb_steps_warmup=2000, train_interval=50, elite_frac=0.05)
 cem.compile()
+
+# memory = SequentialMemory(limit=50000, window_length=1)
+# policy = BoltzmannQPolicy()
+# dqn = DQNAgent(model=model, nb_actions=nb_actions, memory=memory, nb_steps_warmup=10,
+#                target_model_update=1e-2, policy=policy)
+# dqn.compile(Adam(lr=1e-3), metrics=['mae'])
+
+agent = cem
 
 if mode == 'train':
 
-  print('INSIDE TRAINING')
   # Okay, now it's time to learn something! We visualize the training here for show, but this
   # slows down training quite a lot. You can always safely abort the training prematurely using
   # Ctrl + C.
-  cem.fit(env, nb_steps=100000, visualize=True, verbose=1)
+  agent.fit(env, nb_steps=100000, visualize=True, verbose=1)
 
   # After training is done, we save the best weights.
-  cem.save_weights('weights/cem_{}_params.h5f'.format(ENV_NAME), overwrite=True)
+  agent.save_weights('weights/cem_{}_params.h5f'.format(ENV_NAME), overwrite=True)
 
 if mode == 'test':
 
-  print('INSIDE TESTING')
+  agent.load_weights('weights/cem_{}_params.h5f'.format(ENV_NAME))
 
-  cem.load_weights('weights/cem_{}_params.h5f'.format(ENV_NAME))
-
-  cem.test(env, nb_episodes=5, visualize=True)
+  agent.test(env, nb_episodes=5, visualize=True)
