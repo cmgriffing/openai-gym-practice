@@ -23,10 +23,9 @@ mode = args.mode[0]
 if mode != 'train' and mode != 'test' :
   mode = 'train'
 
-ENV_NAME = 'CartPole-v0'
+ENV_NAME = 'Acrobot-v1'
 
 env = gym.make(ENV_NAME)
-
 
 
 np.random.seed(123)
@@ -59,7 +58,6 @@ memory = EpisodeParameterMemory(limit=1000, window_length=1)
 
 cem = CEMAgent(model=model, nb_actions=nb_actions, memory=memory, batch_size=50, nb_steps_warmup=2000, train_interval=50, elite_frac=0.05)
 cem.compile()
-
 
 agent = cem
 
