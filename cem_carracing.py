@@ -27,8 +27,8 @@ if mode != 'train' and mode != 'test' :
 
 ENV_NAME = 'LunarLander-v2'
 
-# env = gym.make(ENV_NAME)
-env = LunarLander()
+env = gym.make(ENV_NAME)
+# env = LunarLander()
 
 
 
