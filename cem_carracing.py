@@ -45,12 +45,15 @@ obs_dim = env.observation_space.shape[0]
 
 # Option 2: deep network
 model = Sequential()
-model.add(Input(shape=(1,) + env.action.shape))
+model.add(Flatten(input_shape=(1,) + env.observation_space.shape))
+model.add(Dense(6, activation='relu'))
+model.add(Input(shape=(1,) + env.action_space.shape))
 model.add(Dense(6, activation='relu'))
 model.add(Dense(42, activation='sigmoid'))
 model.add(Dense(7, activation='relu'))
 model.add(Dense(42, activation='relu'))
 model.add(Dropout(0.2, input_shape=(1,) + env.observation_space.shape))
+model.add(Dense(4, activation='relu'))
 model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
 print(model.summary())
