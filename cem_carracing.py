@@ -45,21 +45,22 @@ obs_dim = env.observation_space.shape[0]
 
 # Option 2: deep network
 model = Sequential()
-model.add(Flatten(input_shape=(1,) + env.observation_space.shape))
+model.add(Input(shape=(1,) + env.action.shape))
 model.add(Dense(6, activation='relu'))
+model.add(Dense(42, activation='sigmoid'))
 model.add(Dense(7, activation='relu'))
 model.add(Dense(42, activation='relu'))
 model.add(Dropout(0.2, input_shape=(1,) + env.observation_space.shape))
-model.add(Dense(nb_actions))
 model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
 print(model.summary())
 
 # memory = EpisodeParameterMemory(limit=1000000, window_length=1)
-memory = SequentialMemory(limit=100000, window_length=1)
-# policy = LinearAnnealedPolicy(EpsGreedyQPolicy(), attr='eps', value_max=1., value_min=.1, value_test=.05, nb_steps=10000)
+memory = SequentialMemory(limit=1000000, window_length=1)
 
-policy = BoltzmannQPolicy()
+policy = LinearAnnealedPolicy(EpsGreedyQPolicy(), attr='eps', value_max=1., value_min=.1, value_test=.05, nb_steps=10000)
+
+# policy = BoltzmannQPolicy()
 
 # cem = CEMAgent(model=model, nb_actions=nb_actions, memory=memory, batch_size=50, nb_steps_warmup=2000, train_interval=50, elite_frac=0.05)
 # cem.compile()
