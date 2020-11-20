@@ -2,7 +2,7 @@ import numpy as np
 import gym
 
 from keras.models import Sequential
-from keras.layers import Dense, Activation, Flatten, Dropout
+from keras.layers import Dense, Activation, Flatten, Dropout, Input
 from keras.optimizers import Adam
 
 from rl.agents.cem import CEMAgent
