@@ -10,6 +10,8 @@ from rl.agents.dqn import DQNAgent
 from rl.policy import BoltzmannQPolicy, EpsGreedyQPolicy, LinearAnnealedPolicy
 from rl.memory import EpisodeParameterMemory, SequentialMemory
 
+from callbacks.episode_interval_callback import EpisodeIntervalCallback
+
 from envs.lunar_lander_v2 import LunarLander
 
 import argparse
@@ -75,12 +77,12 @@ agent = dqn
 
 if mode == 'train':
 
-  agent.fit(env, nb_steps=420000, visualize=True, verbose=1)
+  agent.fit(env, nb_steps=420000, visualize=True, verbose=0, callbacks=[EpisodeIntervalCallback()])
 
-  agent.save_weights('weights/cem_{}_params.h5f'.format(ENV_NAME), overwrite=True)
+  agent.save_weights('weights/dqn_{}_params.h5f'.format(ENV_NAME), overwrite=True)
 
 if mode == 'test':
 
-  agent.load_weights('weights/cem_{}_params.h5f'.format(ENV_NAME))
+  agent.load_weights('weights/dqn_{}_params.h5f'.format(ENV_NAME))
 
   agent.test(env, nb_episodes=20, visualize=True)
