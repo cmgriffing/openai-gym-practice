@@ -55,7 +55,7 @@ model.add(Dense(6, activation='relu'))
 model.add(Dense(7, activation='relu'))
 model.add(Dense(42, activation='relu'))
 model.add(Dropout(0.2, input_shape=(1,) + env.observation_space.shape))
-model.add(Dense(4, activation='relu'))
+model.add(Dense(4, activation='linear'))
 model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
 print(model.summary())
