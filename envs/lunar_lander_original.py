@@ -36,30 +36,28 @@ import gym
 from gym import spaces
 from gym.utils import seeding, EzPickle
 
-SCALE_FACTOR = 4.0
-
 FPS = 50
-SCALE = 30.0*SCALE_FACTOR   # affects how fast-paced the game is, forces should be adjusted as well
+SCALE = 30.0   # affects how fast-paced the game is, forces should be adjusted as well
 
-VIEWPORT_W = 600*SCALE_FACTOR
-VIEWPORT_H = 400*SCALE_FACTOR
-MAIN_ENGINE_POWER = 13.0*SCALE_FACTOR
-SIDE_ENGINE_POWER = 0.6*SCALE_FACTOR
+MAIN_ENGINE_POWER = 13.0
+SIDE_ENGINE_POWER = 0.6
 
 INITIAL_RANDOM = 1000.0   # Set 1500 to make game harder
 
 LANDER_POLY =[
-    (-14*SCALE_FACTOR, +17*SCALE_FACTOR), (-17*SCALE_FACTOR, 0), (-17*SCALE_FACTOR ,-10*SCALE_FACTOR),
-    (+17*SCALE_FACTOR, -10*SCALE_FACTOR), (+17*SCALE_FACTOR, 0), (+14*SCALE_FACTOR, +17*SCALE_FACTOR)
+    (-14, +17), (-17, 0), (-17 ,-10),
+    (+17, -10), (+17, 0), (+14, +17)
     ]
-LEG_AWAY = 20*SCALE_FACTOR
-LEG_DOWN = 18*SCALE_FACTOR
-LEG_W, LEG_H = 2*SCALE_FACTOR, 8*SCALE_FACTOR
-LEG_SPRING_TORQUE = 40*SCALE_FACTOR
+LEG_AWAY = 20
+LEG_DOWN = 18
+LEG_W, LEG_H = 2, 8
+LEG_SPRING_TORQUE = 40
 
-SIDE_ENGINE_HEIGHT = 14.0*SCALE_FACTOR
-SIDE_ENGINE_AWAY = 12.0*SCALE_FACTOR
+SIDE_ENGINE_HEIGHT = 14.0
+SIDE_ENGINE_AWAY = 12.0
 
+VIEWPORT_W = 600
+VIEWPORT_H = 400
 
 
 class ContactDetector(contactListener):
@@ -88,7 +86,9 @@ class LunarLander(gym.Env, EzPickle):
 
     continuous = False
 
-    def __init__(self):
+    episode_steps = 0
+
+    def __init__(self, max_episode_steps=1000):
         EzPickle.__init__(self)
         self.seed()
         self.viewer = None
@@ -102,6 +102,8 @@ class LunarLander(gym.Env, EzPickle):
 
         # useful range is -1 .. +1, but spikes can be higher
         self.observation_space = spaces.Box(-np.inf, np.inf, shape=(8,), dtype=np.float32)
+
+        self.max_episode_steps = max_episode_steps
 
         if self.continuous:
             # Action is two floats [main engine, left-right engines].
@@ -131,6 +133,7 @@ class LunarLander(gym.Env, EzPickle):
 
     def reset(self):
         self._destroy()
+        self.episode_steps = 0
         self.world.contactListener_keepref = ContactDetector(self)
         self.world.contactListener = self.world.contactListener_keepref
         self.game_over = False
@@ -246,6 +249,8 @@ class LunarLander(gym.Env, EzPickle):
             self.world.DestroyBody(self.particles.pop(0))
 
     def step(self, action):
+        self.episode_steps += 1
+
         if self.continuous:
             action = np.clip(action, -1, +1).astype(np.float32)
         else:
@@ -331,6 +336,11 @@ class LunarLander(gym.Env, EzPickle):
         reward -= s_power*0.03
 
         done = False
+
+        if self.episode_steps > self.max_episode_steps:
+            done = True
+            reward = -100
+
         if self.game_over or abs(state[0]) >= 1.0:
             done = True
             reward = -100

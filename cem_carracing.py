@@ -13,7 +13,7 @@ from rl.memory import EpisodeParameterMemory, SequentialMemory
 from callbacks.episode_interval_callback import EpisodeIntervalCallback
 from callbacks.episode_batch_callback import EpisodeBatchCallback
 
-from envs.lunar_lander_v2 import LunarLander
+from envs.lunar_lander_original import LunarLander
 
 import argparse
 
@@ -41,8 +41,8 @@ test_batch = int(args.batch[0]) or 0
 
 ENV_NAME = 'LunarLander-v2'
 
-env = gym.make(ENV_NAME)
-# env = LunarLander()
+# env = gym.make(ENV_NAME)
+env = LunarLander(400)
 
 
 
