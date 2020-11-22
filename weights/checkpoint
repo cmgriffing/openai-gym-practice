@@ -1,2 +1,0 @@
-model_checkpoint_path: "cem_LunarLander-v2_params.h5f"
-all_model_checkpoint_paths: "cem_LunarLander-v2_params.h5f"
