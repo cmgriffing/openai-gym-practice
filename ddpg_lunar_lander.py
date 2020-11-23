@@ -10,7 +10,7 @@ from rl.agents.dqn import DQNAgent
 from rl.agents.ddpg import DDPGAgent
 from rl.policy import BoltzmannQPolicy, EpsGreedyQPolicy, LinearAnnealedPolicy
 from rl.memory import EpisodeParameterMemory, SequentialMemory
-
+from rl.callbacks import ModelIntervalCheckpoint
 from rl.random import OrnsteinUhlenbeckProcess
 
 from callbacks.episode_interval_callback import EpisodeIntervalCallback
@@ -86,7 +86,6 @@ print(critic.summary())
 
 # memory = EpisodeParameterMemory(limit=1000000, window_length=1)
 memory = SequentialMemory(limit=1000000, window_length=1)
-memory = SequentialMemory(limit=100000, window_length=1)
 random_process = OrnsteinUhlenbeckProcess(size=nb_actions, theta=.15, mu=0., sigma=.3)
 agent = DDPGAgent(nb_actions=nb_actions, actor=actor, critic=critic, critic_action_input=action_input,
                   memory=memory, nb_steps_warmup_critic=100, nb_steps_warmup_actor=100,
@@ -96,7 +95,7 @@ agent.compile(Adam(lr=.001, clipnorm=1.), metrics=['mae'])
 if mode == 'train':
   total_steps = 800000
 
-  agent.fit(env, nb_steps=total_steps, visualize=True, verbose=0, callbacks=[EpisodeBatchCallback(total_steps=total_steps, current_batch=0)], nb_max_episode_steps=1000)
+  agent.fit(env, nb_steps=total_steps, visualize=True, verbose=0, callbacks=[EpisodeBatchCallback(total_steps=total_steps, current_batch=0), ], nb_max_episode_steps=1000)
   agent.save_weights('weights/{}{}_{}_params.h5f'.format(ENV_NAME, label, 0), overwrite=True)
 
 if mode == 'test':
