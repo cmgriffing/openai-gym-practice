@@ -55,32 +55,26 @@ env.seed(123)
 nb_actions = env.action_space.shape[0]
 obs_dim = env.observation_space.shape[0]
 
+print(f'Number of Actions: {nb_actions}')
 
 # Next, we build a very simple model.
 actor = Sequential()
 actor.add(Flatten(input_shape=(1,) + env.observation_space.shape))
-actor.add(Dense(16))
-actor.add(Activation('relu'))
-actor.add(Dense(16))
-actor.add(Activation('relu'))
-actor.add(Dense(16))
-actor.add(Activation('relu'))
-actor.add(Dense(nb_actions))
-actor.add(Activation('linear'))
+actor.add(Dense(16, activation='relu'))
+actor.add(Dense(16, activation='relu'))
+actor.add(Dense(16, activation='relu'))
+actor.add(Dropout(0.2, input_shape=(1,) + env.observation_space.shape))
+actor.add(Dense(nb_actions, activation='tanh'))
 print(actor.summary())
 
 action_input = Input(shape=(nb_actions,), name='action_input')
 observation_input = Input(shape=(1,) + env.observation_space.shape, name='observation_input')
 flattened_observation = Flatten()(observation_input)
 x = Concatenate()([action_input, flattened_observation])
-x = Dense(32)(x)
-x = Activation('relu')(x)
-x = Dense(32)(x)
-x = Activation('relu')(x)
-x = Dense(32)(x)
-x = Activation('relu')(x)
-x = Dense(1)(x)
-x = Activation('linear')(x)
+x = Dense(32, activation='relu')(x)
+x = Dense(32, activation='relu')(x)
+x = Dense(32, activation='relu')(x)
+x = Dense(1, activation='linear')(x)
 critic = Model(inputs=[action_input, observation_input], outputs=x)
 print(critic.summary())
 
@@ -95,8 +89,8 @@ agent.compile(Adam(lr=.001, clipnorm=1.), metrics=['mae'])
 if mode == 'train':
   total_steps = 800000
 
-  agent.fit(env, nb_steps=total_steps, visualize=True, verbose=0, callbacks=[EpisodeBatchCallback(total_steps=total_steps, current_batch=0), ], nb_max_episode_steps=1000)
-  agent.save_weights('weights/{}{}_{}_params.h5f'.format(ENV_NAME, label, 0), overwrite=True)
+  agent.fit(env, nb_steps=total_steps, visualize=True, verbose=0, callbacks=[EpisodeBatchCallback(total_steps=total_steps, current_batch=0), ModelIntervalCheckpoint('weights/{}{}_{}_params.h5f'.format(ENV_NAME, label, 0), 100000)], nb_max_episode_steps=1000)
+  agent.save_weights('weights/{}{}_params.h5f'.format(ENV_NAME, label), overwrite=True)
 
 if mode == 'test':
 
