@@ -28,7 +28,7 @@ parser.add_argument('mode', metavar='mode', nargs=1,
 parser.add_argument('label', metavar='label', nargs=1,
                     help='An extra string to label saved weights')
 parser.add_argument('batch', metavar='batch', nargs=1,
-                    help='The batch to load weights for during test mode.')
+                    help='The batch to load weights for.')
 
 args = parser.parse_args()
 
@@ -84,27 +84,31 @@ print(critic.summary())
 memory = SequentialMemory(limit=1000000, window_length=1)
 random_process = OrnsteinUhlenbeckProcess(size=nb_actions, theta=.15, mu=0., sigma=.3)
 agent = DDPGAgent(nb_actions=nb_actions, actor=actor, critic=critic, critic_action_input=action_input,
-                  memory=memory, nb_steps_warmup_critic=1000, nb_steps_warmup_actor=1000,
+                  memory=memory, nb_steps_warmup_critic=100, nb_steps_warmup_actor=100,
                   random_process=random_process, gamma=.99, target_model_update=1e-3)
 agent.compile(Adam(lr=.001, clipnorm=1.), metrics=['mae'])
 
 if mode == 'train':
-  total_steps = 800000
+  # total_steps = 800000
+  total_steps = 200
+
+  if test_batch > 0:
+    agent.load_weights('weights/{}{}_batch_{}_params.h5f'.format(ENV_NAME, label, test_batch))
 
   agent.fit(
-    env, nb_steps=total_steps, visualize=True, verbose=0, callbacks=[
+    env, nb_steps=total_steps, visualize=True, verbose=1, callbacks=[
       EpisodeBatchCallback(
-        total_steps=total_steps, current_batch=0
+        total_steps=total_steps, current_batch=test_batch
       ),
       # VisualizerIntervalCallback()
       # ModelIntervalCheckpoint('weights/{}{}_{}_params.h5f'.format(ENV_NAME, label, 0), 100000)
     ],
     nb_max_episode_steps=400
   )
-  agent.save_weights('weights/{}{}_params.h5f'.format(ENV_NAME, label), overwrite=True)
+  agent.save_weights('weights/{}{}_batch_{}_params.h5f'.format(ENV_NAME, label, test_batch + 1), overwrite=True)
 
 if mode == 'test':
 
-  agent.load_weights('weights/{}{}_params.h5f'.format(ENV_NAME, label, test_batch))
+  agent.load_weights('weights/{}{}_batch_{}_params.h5f'.format(ENV_NAME, label, test_batch))
 
   agent.test(env, nb_episodes=20, visualize=True)

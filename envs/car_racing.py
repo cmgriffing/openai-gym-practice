@@ -41,8 +41,10 @@ from Box2D.b2 import contactListener
 
 import gym
 from gym import spaces
-from gym.envs.box2d.car_dynamics import Car
+# from gym.envs.box2d.car_dynamics import Car
+from envs.car_dynamics import Car
 from gym.utils import seeding, EzPickle
+from gym.envs.classic_control import rendering
 
 import pyglet
 
@@ -71,6 +73,44 @@ BORDER = 8 / SCALE
 BORDER_MIN_COUNT = 4
 
 ROAD_COLOR = [0.4, 0.4, 0.4]
+
+
+COLORS = [0.4, 0.8, 0.4, 1.0] * 4
+BASE_POLYGONS = [
+    +PLAYFIELD,
+    +PLAYFIELD,
+    0,
+    +PLAYFIELD,
+    -PLAYFIELD,
+    0,
+    -PLAYFIELD,
+    -PLAYFIELD,
+    0,
+    -PLAYFIELD,
+    +PLAYFIELD,
+    0,
+]
+
+k = PLAYFIELD / 20.0
+COLORS.extend([0.4, 0.9, 0.4, 1.0] * 4 * 20 * 20)
+for x in range(-20, 20, 2):
+    for y in range(-20, 20, 2):
+        BASE_POLYGONS.extend(
+            [
+                k * x + k,
+                k * y + 0,
+                0,
+                k * x + 0,
+                k * y + 0,
+                0,
+                k * x + 0,
+                k * y + k,
+                0,
+                k * x + k,
+                k * y + k,
+                0,
+            ]
+        )
 
 
 class FrictionDetector(contactListener):
@@ -112,7 +152,6 @@ class FrictionDetector(contactListener):
         else:
             obj.tiles.remove(tile)
 
-
 class CarRacing(gym.Env, EzPickle):
     metadata = {
         "render.modes": ["human", "rgb_array", "state_pixels"],
@@ -151,10 +190,16 @@ class CarRacing(gym.Env, EzPickle):
     def _destroy(self):
         if not self.road:
             return
-        for t in self.road:
-            self.world.DestroyBody(t)
-        self.road = []
-        self.car.destroy()
+        else:
+            for t in self.road:
+                self.world.DestroyBody(t)
+            del self.road_poly[:]
+            del self.road[:]
+
+        if not self.car:
+            return
+        else:
+            self.car.destroy()
 
     def _create_track(self):
         CHECKPOINTS = 12
@@ -363,6 +408,7 @@ class CarRacing(gym.Env, EzPickle):
 
         return self.step(None)[0]
 
+    # @profile
     def step(self, action):
         if action is not None:
             self.car.steer(-action[0])
@@ -393,11 +439,10 @@ class CarRacing(gym.Env, EzPickle):
 
         return self.state, step_reward, done, {}
 
+    # @profile
     def render(self, mode="human"):
         assert mode in ["human", "state_pixels", "rgb_array"]
         if self.viewer is None:
-            from gym.envs.classic_control import rendering
-
             self.viewer = rendering.Viewer(WINDOW_W, WINDOW_H)
             self.score_label = pyglet.text.Label(
                 "0000",
@@ -481,55 +526,25 @@ class CarRacing(gym.Env, EzPickle):
             self.viewer.close()
             self.viewer = None
 
+    # @profile
     def render_road(self):
-        colors = [0.4, 0.8, 0.4, 1.0] * 4
-        polygons_ = [
-            +PLAYFIELD,
-            +PLAYFIELD,
-            0,
-            +PLAYFIELD,
-            -PLAYFIELD,
-            0,
-            -PLAYFIELD,
-            -PLAYFIELD,
-            0,
-            -PLAYFIELD,
-            +PLAYFIELD,
-            0,
-        ]
+        if 'road_vertex_list' not in self.__dict__:
+            colors = COLORS.copy()
+            polygons_ = BASE_POLYGONS.copy()
 
-        k = PLAYFIELD / 20.0
-        colors.extend([0.4, 0.9, 0.4, 1.0] * 4 * 20 * 20)
-        for x in range(-20, 20, 2):
-            for y in range(-20, 20, 2):
-                polygons_.extend(
-                    [
-                        k * x + k,
-                        k * y + 0,
-                        0,
-                        k * x + 0,
-                        k * y + 0,
-                        0,
-                        k * x + 0,
-                        k * y + k,
-                        0,
-                        k * x + k,
-                        k * y + k,
-                        0,
-                    ]
-                )
+            for poly, color in self.road_poly:
+                colors.extend([color[0], color[1], color[2], 1] * len(poly))
+                for p in poly:
+                    polygons_.extend([p[0], p[1], 0])
 
-        for poly, color in self.road_poly:
-            colors.extend([color[0], color[1], color[2], 1] * len(poly))
-            for p in poly:
-                polygons_.extend([p[0], p[1], 0])
+            self.road_vertex_list = pyglet.graphics.vertex_list(
+                len(polygons_) // 3, ("v3f", polygons_), ("c4f", colors)  # gl.GL_QUADS,
+            )
+        self.road_vertex_list.draw(gl.GL_QUADS)
+        self.road_vertex_list.delete()
+        del self.road_vertex_list
 
-        vl = pyglet.graphics.vertex_list(
-            len(polygons_) // 3, ("v3f", polygons_), ("c4f", colors)  # gl.GL_QUADS,
-        )
-        vl.draw(gl.GL_QUADS)
-        vl.delete()
-
+    # @profile
     def render_indicators(self, W, H):
         s = W / 40.0
         h = H / 40.0
@@ -586,13 +601,18 @@ class CarRacing(gym.Env, EzPickle):
         vertical_ind(10, 0.01 * self.car.wheels[3].omega, (0.2, 0, 1))
         horiz_ind(20, -10.0 * self.car.wheels[0].joint.angle, (0, 1, 0))
         horiz_ind(30, -0.8 * self.car.hull.angularVelocity, (1, 0, 0))
-        vl = pyglet.graphics.vertex_list(
-            len(polygons) // 3, ("v3f", polygons), ("c4f", colors)  # gl.GL_QUADS,
-        )
-        vl.draw(gl.GL_QUADS)
-        vl.delete()
+        if 'indicators_vertex_list' not in self.__dict__:
+            self.indicators_vertex_list = pyglet.graphics.vertex_list(
+                len(polygons) // 3, ("v3f", polygons), ("c4f", colors)  # gl.GL_QUADS,
+            )
+        # else:
+        #     self.indicators_vertex_list.resize(("c4f", colors))
+        self.indicators_vertex_list.draw(gl.GL_QUADS)
         self.score_label.text = "%04i" % self.reward
         self.score_label.draw()
+        # del polygons[:]
+        # del colors[:]
+        # vl.delete()
 
 
 if __name__ == "__main__":
