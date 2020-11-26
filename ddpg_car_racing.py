@@ -84,13 +84,13 @@ print(critic.summary())
 memory = SequentialMemory(limit=1000000, window_length=1)
 random_process = OrnsteinUhlenbeckProcess(size=nb_actions, theta=.15, mu=0., sigma=.3)
 agent = DDPGAgent(nb_actions=nb_actions, actor=actor, critic=critic, critic_action_input=action_input,
-                  memory=memory, nb_steps_warmup_critic=100, nb_steps_warmup_actor=100,
+                  memory=memory, nb_steps_warmup_critic=200, nb_steps_warmup_actor=200,
                   random_process=random_process, gamma=.99, target_model_update=1e-3)
 agent.compile(Adam(lr=.001, clipnorm=1.), metrics=['mae'])
 
 if mode == 'train':
   # total_steps = 800000
-  total_steps = 200
+  total_steps = 100000
 
   if test_batch > 0:
     agent.load_weights('weights/{}{}_batch_{}_params.h5f'.format(ENV_NAME, label, test_batch))
