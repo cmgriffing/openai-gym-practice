@@ -53,8 +53,8 @@ STATE_W = 96  # less than Atari 160x192
 STATE_H = 96
 VIDEO_W = 600
 VIDEO_H = 400
-WINDOW_W = 1000
-WINDOW_H = 800
+WINDOW_W = 600
+WINDOW_H = 400
 
 SCALE = 6.0  # Track scale
 TRACK_RAD = 900 / SCALE  # Track is heavily morphed circle with this radius
@@ -528,6 +528,7 @@ class CarRacing(gym.Env, EzPickle):
             len(polygons_) // 3, ("v3f", polygons_), ("c4f", colors)  # gl.GL_QUADS,
         )
         vl.draw(gl.GL_QUADS)
+        vl.delete()
 
     def render_indicators(self, W, H):
         s = W / 40.0
@@ -589,6 +590,7 @@ class CarRacing(gym.Env, EzPickle):
             len(polygons) // 3, ("v3f", polygons), ("c4f", colors)  # gl.GL_QUADS,
         )
         vl.draw(gl.GL_QUADS)
+        vl.delete()
         self.score_label.text = "%04i" % self.reward
         self.score_label.draw()
 
@@ -639,9 +641,9 @@ if __name__ == "__main__":
         while True:
             s, r, done, info = env.step(a)
             total_reward += r
-            if steps % 200 == 0 or done:
-                print("\naction " + str(["{:+0.2f}".format(x) for x in a]))
-                print("step {} total_reward {:+0.2f}".format(steps, total_reward))
+            # if steps % 200 == 0 or done:
+            #     print("\naction " + str(["{:+0.2f}".format(x) for x in a]))
+            #     print("step {} total_reward {:+0.2f}".format(steps, total_reward))
             steps += 1
             isopen = env.render()
             if done or restart or isopen == False:
