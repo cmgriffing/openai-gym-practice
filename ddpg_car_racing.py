@@ -96,11 +96,11 @@ if mode == 'train':
     agent.load_weights('weights/{}{}_batch_{}_params.h5f'.format(ENV_NAME, label, test_batch))
 
   agent.fit(
-    env, nb_steps=total_steps, visualize=True, verbose=1, callbacks=[
+    env, nb_steps=total_steps, visualize=True, verbose=0, callbacks=[
       EpisodeBatchCallback(
         total_steps=total_steps, current_batch=test_batch
       ),
-      # VisualizerIntervalCallback()
+      VisualizerIntervalCallback(3)
       # ModelIntervalCheckpoint('weights/{}{}_{}_params.h5f'.format(ENV_NAME, label, 0), 100000)
     ],
     nb_max_episode_steps=400
