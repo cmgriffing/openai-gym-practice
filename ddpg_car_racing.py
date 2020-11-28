@@ -3,7 +3,7 @@ import gym
 
 from keras.models import Sequential, Model
 from keras.layers import Dense, Activation, Flatten, Dropout, Input, Concatenate
-from keras.optimizers import Adam
+from keras.optimizers import Adam, SGD, RMSprop
 
 from rl.agents.cem import CEMAgent
 from rl.agents.dqn import DQNAgent
@@ -86,7 +86,11 @@ random_process = OrnsteinUhlenbeckProcess(size=nb_actions, theta=.15, mu=0., sig
 agent = DDPGAgent(nb_actions=nb_actions, actor=actor, critic=critic, critic_action_input=action_input,
                   memory=memory, nb_steps_warmup_critic=400, nb_steps_warmup_actor=400,
                   random_process=random_process, gamma=.99, target_model_update=1e-3)
-agent.compile(Adam(lr=.001, clipnorm=1.), metrics=['mae'])
+agent.compile(
+  # Adam(lr=.001, clipnorm=1.),
+  RMSprop(),
+  metrics=['mae']
+)
 
 total_steps = 50000
 
@@ -96,14 +100,14 @@ if mode == 'train':
     agent.load_weights('weights/{}{}_batch_{}_x_{}_params.h5f'.format(ENV_NAME, label, test_batch, total_steps))
 
   agent.fit(
-    env, nb_steps=total_steps, visualize=False, verbose=0, callbacks=[
+    env, nb_steps=total_steps, visualize=True, verbose=0, callbacks=[
       EpisodeBatchCallback(
         total_steps=total_steps, current_batch=test_batch
       ),
-      VisualizerIntervalCallback(4)
+      # VisualizerIntervalCallback(4)
       # ModelIntervalCheckpoint('weights/{}{}_{}_params.h5f'.format(ENV_NAME, label, 0), 100000)
     ],
-    nb_max_episode_steps=200
+    nb_max_episode_steps=120 * (test_batch + 1)
   )
   agent.save_weights('weights/{}{}_batch_{}_x_{}_params.h5f'.format(ENV_NAME, label, test_batch + 1, total_steps), overwrite=True)
 
