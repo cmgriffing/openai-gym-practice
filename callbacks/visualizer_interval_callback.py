@@ -13,5 +13,5 @@ class VisualizerIntervalCallback(Callback):
 
     def on_action_end(self, action, logs):
         """ Render environment at the end of each action """
-        if(self.episode % 3 == 0):
+        if(self.episode % self.episode_interval == 0):
           self.env.render(mode='human')

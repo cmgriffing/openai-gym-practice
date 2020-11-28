@@ -65,18 +65,18 @@ actor.add(Flatten(input_shape=(1,) + env.observation_space.shape))
 actor.add(Dense(16, activation='tanh'))
 actor.add(Dense(16, activation='tanh'))
 actor.add(Dense(16, activation='tanh'))
-# actor.add(Dropout(0.2, input_shape=(1,) + env.observation_space.shape))
-actor.add(Dense(nb_actions, activation='tanh'))
+actor.add(Dropout(0.2, input_shape=(1,) + env.observation_space.shape))
+actor.add(Dense(nb_actions, activation='softmax'))
 print(actor.summary())
 
 action_input = Input(shape=(nb_actions,), name='action_input')
 observation_input = Input(shape=(1,) + env.observation_space.shape, name='observation_input')
 flattened_observation = Flatten()(observation_input)
 x = Concatenate()([action_input, flattened_observation])
-x = Dense(32, activation='tanh')(x)
-x = Dense(32, activation='tanh')(x)
-x = Dense(32, activation='tanh')(x)
-x = Dense(1, activation='tanh')(x)
+x = Dense(32, activation='relu')(x)
+x = Dense(32, activation='relu')(x)
+x = Dense(32, activation='relu')(x)
+x = Dense(1, activation='linear')(x)
 critic = Model(inputs=[action_input, observation_input], outputs=x)
 print(critic.summary())
 
@@ -84,31 +84,31 @@ print(critic.summary())
 memory = SequentialMemory(limit=1000000, window_length=1)
 random_process = OrnsteinUhlenbeckProcess(size=nb_actions, theta=.15, mu=0., sigma=.3)
 agent = DDPGAgent(nb_actions=nb_actions, actor=actor, critic=critic, critic_action_input=action_input,
-                  memory=memory, nb_steps_warmup_critic=200, nb_steps_warmup_actor=200,
+                  memory=memory, nb_steps_warmup_critic=400, nb_steps_warmup_actor=400,
                   random_process=random_process, gamma=.99, target_model_update=1e-3)
 agent.compile(Adam(lr=.001, clipnorm=1.), metrics=['mae'])
 
+total_steps = 50000
+
 if mode == 'train':
-  # total_steps = 800000
-  total_steps = 100000
 
   if test_batch > 0:
-    agent.load_weights('weights/{}{}_batch_{}_params.h5f'.format(ENV_NAME, label, test_batch))
+    agent.load_weights('weights/{}{}_batch_{}_x_{}_params.h5f'.format(ENV_NAME, label, test_batch, total_steps))
 
   agent.fit(
-    env, nb_steps=total_steps, visualize=True, verbose=0, callbacks=[
+    env, nb_steps=total_steps, visualize=False, verbose=0, callbacks=[
       EpisodeBatchCallback(
         total_steps=total_steps, current_batch=test_batch
       ),
-      VisualizerIntervalCallback(3)
+      VisualizerIntervalCallback(4)
       # ModelIntervalCheckpoint('weights/{}{}_{}_params.h5f'.format(ENV_NAME, label, 0), 100000)
     ],
-    nb_max_episode_steps=400
+    nb_max_episode_steps=200
   )
-  agent.save_weights('weights/{}{}_batch_{}_params.h5f'.format(ENV_NAME, label, test_batch + 1), overwrite=True)
+  agent.save_weights('weights/{}{}_batch_{}_x_{}_params.h5f'.format(ENV_NAME, label, test_batch + 1, total_steps), overwrite=True)
 
 if mode == 'test':
 
-  agent.load_weights('weights/{}{}_batch_{}_params.h5f'.format(ENV_NAME, label, test_batch))
+  agent.load_weights('weights/{}{}_batch_{}_x_{}_params.h5f'.format(ENV_NAME, label, test_batch, total_steps))
 
   agent.test(env, nb_episodes=20, visualize=True)

@@ -613,6 +613,8 @@ class CarRacing(gym.Env, EzPickle):
         # del polygons[:]
         # del colors[:]
         # vl.delete()
+        self.indicators_vertex_list.delete
+        del self.indicators_vertex_list
 
 
 if __name__ == "__main__":
