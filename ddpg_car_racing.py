@@ -2,7 +2,7 @@ import numpy as np
 import gym
 
 from keras.models import Sequential, Model
-from keras.layers import Dense, Activation, Flatten, Dropout, Input, Concatenate
+from keras.layers import Dense, Activation, Flatten, Dropout, Input, Concatenate, Convolution2D, ActivityRegularization
 from keras.optimizers import Adam, SGD, RMSprop
 
 from rl.agents.cem import CEMAgent
@@ -47,7 +47,7 @@ test_batch = int(args.batch[0]) or 0
 ENV_NAME = 'CarRacing-v0'
 
 # env = gym.make(ENV_NAME)
-env = CarRacing()
+env = CarRacing(lowest_score_allowed=-20)
 
 
 
@@ -63,9 +63,9 @@ print(f'Number of Actions: {nb_actions}')
 actor = Sequential()
 actor.add(Flatten(input_shape=(1,) + env.observation_space.shape))
 actor.add(Dense(16, activation='tanh'))
+actor.add(Dense(16, activation='relu'))
 actor.add(Dense(16, activation='tanh'))
-actor.add(Dense(16, activation='tanh'))
-actor.add(Dropout(0.2, input_shape=(1,) + env.observation_space.shape))
+# actor.add(Dropout(0.2, input_shape=(1,) + env.observation_space.shape))
 actor.add(Dense(nb_actions, activation='softmax'))
 print(actor.summary())
 
@@ -74,7 +74,7 @@ observation_input = Input(shape=(1,) + env.observation_space.shape, name='observ
 flattened_observation = Flatten()(observation_input)
 x = Concatenate()([action_input, flattened_observation])
 x = Dense(32, activation='relu')(x)
-x = Dense(32, activation='relu')(x)
+x = Dense(32, activation='tanh')(x)
 x = Dense(32, activation='relu')(x)
 x = Dense(1, activation='linear')(x)
 critic = Model(inputs=[action_input, observation_input], outputs=x)
@@ -88,7 +88,7 @@ agent = DDPGAgent(nb_actions=nb_actions, actor=actor, critic=critic, critic_acti
                   random_process=random_process, gamma=.99, target_model_update=1e-3)
 agent.compile(
   # Adam(lr=.001, clipnorm=1.),
-  RMSprop(),
+  RMSprop(centered=True),
   metrics=['mae']
 )
 
@@ -99,6 +99,10 @@ if mode == 'train':
   if test_batch > 0:
     agent.load_weights('weights/{}{}_batch_{}_x_{}_params.h5f'.format(ENV_NAME, label, test_batch, total_steps))
 
+  max_steps = 300 * ((test_batch / 2) + 1)
+  if max_steps > 1000:
+    max_steps = 1000
+
   agent.fit(
     env, nb_steps=total_steps, visualize=True, verbose=0, callbacks=[
       EpisodeBatchCallback(
@@ -107,7 +111,7 @@ if mode == 'train':
       # VisualizerIntervalCallback(4)
       # ModelIntervalCheckpoint('weights/{}{}_{}_params.h5f'.format(ENV_NAME, label, 0), 100000)
     ],
-    nb_max_episode_steps=120 * (test_batch + 1)
+    # nb_max_episode_steps=max_steps
   )
   agent.save_weights('weights/{}{}_batch_{}_x_{}_params.h5f'.format(ENV_NAME, label, test_batch + 1, total_steps), overwrite=True)
 

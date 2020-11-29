@@ -158,7 +158,7 @@ class CarRacing(gym.Env, EzPickle):
         "video.frames_per_second": FPS,
     }
 
-    def __init__(self, verbose=1):
+    def __init__(self, verbose=1, lowest_score_allowed=-100):
         EzPickle.__init__(self)
         self.seed()
         self.contactListener_keepref = FrictionDetector(self)
@@ -182,6 +182,8 @@ class CarRacing(gym.Env, EzPickle):
         self.observation_space = spaces.Box(
             low=0, high=255, shape=(STATE_H, STATE_W, 3), dtype=np.uint8
         )
+
+        self.lowest_score_allowed = lowest_score_allowed
 
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
@@ -436,6 +438,9 @@ class CarRacing(gym.Env, EzPickle):
             if abs(x) > PLAYFIELD or abs(y) > PLAYFIELD:
                 done = True
                 step_reward = -100
+
+        if self.reward < self.lowest_score_allowed:
+            done = True
 
         return self.state, step_reward, done, {}
 
