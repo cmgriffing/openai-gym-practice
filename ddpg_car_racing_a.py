@@ -62,20 +62,20 @@ print(f'Number of Actions: {nb_actions}')
 # Next, we build a very simple model.
 actor = Sequential()
 actor.add(Flatten(input_shape=(1,) + env.observation_space.shape))
-actor.add(Dense(16, activation='tanh'))
-actor.add(Dense(16, activation='relu'))
-actor.add(Dense(16, activation='tanh'))
+actor.add(Dense(64, activation='tanh'))
+actor.add(Dense(64, activation='tanh'))
 # actor.add(Dropout(0.2, input_shape=(1,) + env.observation_space.shape))
 actor.add(Dense(nb_actions, activation='softmax'))
+# actor.add(Dense(nb_actions, activation='tanh'))
 print(actor.summary())
 
 action_input = Input(shape=(nb_actions,), name='action_input')
 observation_input = Input(shape=(1,) + env.observation_space.shape, name='observation_input')
 flattened_observation = Flatten()(observation_input)
 x = Concatenate()([action_input, flattened_observation])
-x = Dense(32, activation='relu')(x)
 x = Dense(32, activation='tanh')(x)
-x = Dense(32, activation='relu')(x)
+x = Dense(32, activation='tanh')(x)
+x = Dense(32, activation='tanh')(x)
 x = Dense(1, activation='linear')(x)
 critic = Model(inputs=[action_input, observation_input], outputs=x)
 print(critic.summary())
@@ -84,11 +84,12 @@ print(critic.summary())
 memory = SequentialMemory(limit=1000000, window_length=1)
 random_process = OrnsteinUhlenbeckProcess(size=nb_actions, theta=.15, mu=0., sigma=.3)
 agent = DDPGAgent(nb_actions=nb_actions, actor=actor, critic=critic, critic_action_input=action_input,
-                  memory=memory, nb_steps_warmup_critic=400, nb_steps_warmup_actor=400,
+                  memory=memory, nb_steps_warmup_critic=1000, nb_steps_warmup_actor=1000,
                   random_process=random_process, gamma=.99, target_model_update=1e-3)
 agent.compile(
   # Adam(lr=.001, clipnorm=1.),
-  RMSprop(centered=True),
+  Adam(lr=.003,),
+  # RMSprop(centered=True),
   metrics=['mae']
 )
 
