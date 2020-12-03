@@ -112,6 +112,7 @@ for x in range(-20, 20, 2):
             ]
         )
 
+
 class FrictionDetector(contactListener):
     def __init__(self, env):
         contactListener.__init__(self)
@@ -146,10 +147,7 @@ class FrictionDetector(contactListener):
             obj.tiles.add(tile)
             if not tile.road_visited:
                 tile.road_visited = True
-                # self.env.reward += 1000.0 / len(self.env.track)
-                steer_modifier = (1.0 - abs(self.env.current_steer)) / 2
-                previous_steer_modifier = abs(np.sum(self.env.previous_steers)) * -0.1
-                self.env.reward += (1000.0 / len(self.env.track) * steer_modifier) - previous_steer_modifier
+                self.env.reward += 1000.0 / len(self.env.track)
                 self.env.tile_visited_count += 1
         else:
             obj.tiles.remove(tile)
@@ -186,9 +184,6 @@ class CarRacing(gym.Env, EzPickle):
         )
 
         self.lowest_score_allowed = lowest_score_allowed
-
-        self.current_steer = 0
-        self.previous_steers = [0]
 
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
@@ -418,9 +413,6 @@ class CarRacing(gym.Env, EzPickle):
     # @profile
     def step(self, action):
         if action is not None:
-            self.previous_steers.append(self.current_steer)
-            self.previous_steers = self.previous_steers[-10:]
-            self.current_steer = -action[0]
             self.car.steer(-action[0])
             self.car.gas(action[1])
             self.car.brake(action[2])
